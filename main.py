@@ -1,6 +1,9 @@
+import datetime
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 
 import pickle
 import time
@@ -10,15 +13,7 @@ from config import username, password
 
 
 def ask_multiprocessing() -> bool:
-    return bool(input('0 - without multiprocessing, 1 - with it: '))
-
-
-def check_xpath_exists(xpath: str, driver):
-    try:
-        driver.find_element(By.XPATH, xpath)
-        return True
-    except NoSuchElementException:
-        return False
+    return bool(int(input('0 - without multiprocessing, 1 - with it: ')))
 
 
 class InstagramBot:
@@ -29,12 +24,12 @@ class InstagramBot:
         self.url = 'https://www.instagram.com/'
         self.driver = webdriver.Chrome()
 
-    def log_in(self):
+    def log_in(self) -> None:
         self.driver.get(url=self.url)
-        time.sleep(5)
 
         if not os.path.exists(f'cookies/{self.user_name}_cookies'):
             print('[INFO] cookies dont exist')
+            WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, '/html/body/div[2]/div/div/div[1]/div/div/div/div[1]/section/main/article/div[2]/div[1]/div[2]/form/div/div[1]/div/label/input')))
 
             user_name_input = self.driver.find_element(By.XPATH, '/html/body/div[2]/div/div/div[1]/div/div/div/div[1]/section/main/article/div[2]/div[1]/div[2]/form/div/div[1]/div/label/input')
             user_name_input.send_keys(self.user_name)
@@ -54,74 +49,69 @@ class InstagramBot:
             for cookie in pickle.load(open(f'cookies/{self.user_name}_cookies', 'rb')):
                 self.driver.add_cookie(cookie)
 
-            time.sleep(3)
-            self.driver.refresh()
-            time.sleep(5)
+            # self.driver.refresh()
 
-            if check_xpath_exists('/html/body/div[2]/div/div/div[3]/div/div/div[1]/div/div[2]/div/div/div/div/div[2]/div/div/div[3]/button[2]', self.driver):
-                not_now_button = self.driver.find_element(By.XPATH, '/html/body/div[2]/div/div/div[3]/div/div/div[1]/div/div[2]/div/div/div/div/div[2]/div/div/div[3]/button[2]')
-                not_now_button.click()
-
-            time.sleep(3)
-
-    def set_like(self, post_url):
+    def set_like(self, post_url: str) -> None:
         self.driver.get(url=post_url)
-        time.sleep(5)
+        WebDriverWait(self.driver, 5).until(EC.presence_of_element_located((By.XPATH, '/html/body/div[2]/div/div/div[2]/div/div/div/div[1]/div[1]/div[2]/section/main/div[1]/div[1]/article/div/div[2]/div/div[2]/section[1]/span[1]/button')))
 
         like_button = self.driver.find_element(By.XPATH, '/html/body/div[2]/div/div/div[2]/div/div/div/div[1]/div[1]/div[2]/section/main/div[1]/div[1]/article/div/div[2]/div/div[2]/section[1]/span[1]/button')
 
-        if check_xpath_exists('/html/body/div[2]/div/div/div[2]/div/div/div/div[1]/div[1]/div[2]/section/main/div[1]/div[1]/article/div/div[2]/div/div[2]/section[1]/span[1]/button/div[2]', self.driver):
+        if self.check_xpath_exists('/html/body/div[2]/div/div/div[2]/div/div/div/div[1]/div[1]/div[2]/section/main/div[1]/div[1]/article/div/div[2]/div/div[2]/section[1]/span[1]/button/div[2]'):
             like_button.click()
             print('[+] like set')
         else:
             print('[+] like already set')
 
-        time.sleep(3)
+    def check_xpath_exists(self, xpath: str) -> bool:
+        try:
+            self.driver.find_element(By.XPATH, xpath)
+            return True
+        except NoSuchElementException:
+            return False
 
-    def close(self):
+    def close(self) -> None:
         self.driver.close()
         self.driver.quit()
 
 
-def log_in(post_url: str):
-    driver = webdriver.Chrome()
-    driver.get('https://www.instagram.com/')
-    time.sleep(5)
-
-    for cookie in pickle.load(open(f'cookies/{username}_cookies', 'rb')):
-        driver.add_cookie(cookie)
-
-    print('[INFO] cookies loaded')
-    time.sleep(3)
-    driver.refresh()
-    time.sleep(5)
-
-    driver.get(url=post_url)
-    time.sleep(5)
-
-    like_button = driver.find_element(By.XPATH,
-                                           '/html/body/div[2]/div/div/div[2]/div/div/div/div[1]/div[1]/div[2]/section/main/div[1]/div[1]/article/div/div[2]/div/div[2]/section[1]/span[1]/button')
-    if check_xpath_exists(
-            '/html/body/div[2]/div/div/div[2]/div/div/div/div[1]/div[1]/div[2]/section/main/div[1]/div[1]/article/div/div[2]/div/div[2]/section[1]/span[1]/button/div[2]',
-            driver):
-        like_button.click()
-        print('[+] like set')
-    else:
-        print('[+] like already set')
-
-    time.sleep(3)
+def log_in_set_likes(post_url: str) -> None:
+    instagram_bot = InstagramBot(username, password)
+    instagram_bot.log_in()
+    instagram_bot.set_like(post_url)
+    instagram_bot.close()
 
 
 if __name__ == '__main__':
     posts = (
         'https://www.instagram.com/p/CrANRK9rni4/',
-        'https://www.instagram.com/p/Cq-W4v4tjxx/',
-        'https://www.instagram.com/p/Cq-3Sq3IhRE/'
+        'https://www.instagram.com/p/CrANRK9rni4/',
+        'https://www.instagram.com/p/CrANRK9rni4/',
+        'https://www.instagram.com/p/CrANRK9rni4/',
+        'https://www.instagram.com/p/CrANRK9rni4/',
+        'https://www.instagram.com/p/CrANRK9rni4/',
+        'https://www.instagram.com/p/CrANRK9rni4/',
+        'https://www.instagram.com/p/CrANRK9rni4/'
     )
 
-    if ask_multiprocessing():
-        with Pool(os.cpu_count()) as pool:
-            pool.map(log_in, posts)
-    else:
+    if len(posts) == 1:
         bot = InstagramBot(username, password)
         bot.log_in()
+        bot.set_like(posts[0])
+        bot.close()
+
+    _multiprocessing = ask_multiprocessing()
+
+    if _multiprocessing:
+        start_time = datetime.datetime.now()
+        with Pool(os.cpu_count()) as pool:
+            pool.map(log_in_set_likes, posts)
+        print(f'Total time is {datetime.datetime.now() - start_time}')
+    else:
+        start_time = datetime.datetime.now()
+        bot = InstagramBot(username, password)
+        bot.log_in()
+        for url in posts:
+            bot.set_like(url)
+        bot.close()
+        print(f'Total time is {datetime.datetime.now() - start_time}')
