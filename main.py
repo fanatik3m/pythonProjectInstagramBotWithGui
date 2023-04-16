@@ -5,7 +5,20 @@ from selenium.common.exceptions import NoSuchElementException
 import pickle
 import time
 import os
+from multiprocessing import Pool
 from config import username, password
+
+
+def ask_multiprocessing() -> bool:
+    return bool(input('0 - without multiprocessing, 1 - with it: '))
+
+
+def check_xpath_exists(xpath: str, driver):
+    try:
+        driver.find_element(By.XPATH, xpath)
+        return True
+    except NoSuchElementException:
+        return False
 
 
 class InstagramBot:
@@ -45,7 +58,7 @@ class InstagramBot:
             self.driver.refresh()
             time.sleep(5)
 
-            if self.check_xpath_exists('/html/body/div[2]/div/div/div[3]/div/div/div[1]/div/div[2]/div/div/div/div/div[2]/div/div/div[3]/button[2]'):
+            if check_xpath_exists('/html/body/div[2]/div/div/div[3]/div/div/div[1]/div/div[2]/div/div/div/div/div[2]/div/div/div[3]/button[2]', self.driver):
                 not_now_button = self.driver.find_element(By.XPATH, '/html/body/div[2]/div/div/div[3]/div/div/div[1]/div/div[2]/div/div/div/div/div[2]/div/div/div[3]/button[2]')
                 not_now_button.click()
 
@@ -57,7 +70,7 @@ class InstagramBot:
 
         like_button = self.driver.find_element(By.XPATH, '/html/body/div[2]/div/div/div[2]/div/div/div/div[1]/div[1]/div[2]/section/main/div[1]/div[1]/article/div/div[2]/div/div[2]/section[1]/span[1]/button')
 
-        if self.check_xpath_exists('/html/body/div[2]/div/div/div[2]/div/div/div/div[1]/div[1]/div[2]/section/main/div[1]/div[1]/article/div/div[2]/div/div[2]/section[1]/span[1]/button/div[2]'):
+        if check_xpath_exists('/html/body/div[2]/div/div/div[2]/div/div/div/div[1]/div[1]/div[2]/section/main/div[1]/div[1]/article/div/div[2]/div/div[2]/section[1]/span[1]/button/div[2]', self.driver):
             like_button.click()
             print('[+] like set')
         else:
@@ -65,26 +78,50 @@ class InstagramBot:
 
         time.sleep(3)
 
-    def check_xpath_exists(self, xpath):
-        try:
-            self.driver.find_element(By.XPATH, xpath)
-            return True
-        except NoSuchElementException:
-            return False
-
     def close(self):
         self.driver.close()
         self.driver.quit()
 
 
-def main():
-    bot = InstagramBot(username, password)
+def log_in(post_url: str):
+    driver = webdriver.Chrome()
+    driver.get('https://www.instagram.com/')
+    time.sleep(5)
 
-    bot.log_in()
-    bot.set_like('[post_url]')
+    for cookie in pickle.load(open(f'cookies/{username}_cookies', 'rb')):
+        driver.add_cookie(cookie)
+
+    print('[INFO] cookies loaded')
+    time.sleep(3)
+    driver.refresh()
+    time.sleep(5)
+
+    driver.get(url=post_url)
+    time.sleep(5)
+
+    like_button = driver.find_element(By.XPATH,
+                                           '/html/body/div[2]/div/div/div[2]/div/div/div/div[1]/div[1]/div[2]/section/main/div[1]/div[1]/article/div/div[2]/div/div[2]/section[1]/span[1]/button')
+    if check_xpath_exists(
+            '/html/body/div[2]/div/div/div[2]/div/div/div/div[1]/div[1]/div[2]/section/main/div[1]/div[1]/article/div/div[2]/div/div[2]/section[1]/span[1]/button/div[2]',
+            driver):
+        like_button.click()
+        print('[+] like set')
+    else:
+        print('[+] like already set')
+
+    time.sleep(3)
 
 
 if __name__ == '__main__':
-    main()
+    posts = (
+        'https://www.instagram.com/p/CrANRK9rni4/',
+        'https://www.instagram.com/p/Cq-W4v4tjxx/',
+        'https://www.instagram.com/p/Cq-3Sq3IhRE/'
+    )
 
-# :) :3
+    if ask_multiprocessing():
+        with Pool(os.cpu_count()) as pool:
+            pool.map(log_in, posts)
+    else:
+        bot = InstagramBot(username, password)
+        bot.log_in()
