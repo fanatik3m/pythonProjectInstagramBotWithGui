@@ -8,7 +8,7 @@ To use it you need:
 + Write data of account (which will be used) in config.py
 + Create folder with name 'cookies' in project location
 
-#To run program you need to run 'GUI.py'
+# To run program you need to run 'GUI.py'
 
 ### ToDo: add multiprocessing and GUI to the project
 + In this program you can choose use muluiprocessing or don't use
