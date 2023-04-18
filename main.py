@@ -1,10 +1,11 @@
-import datetime
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
+from fake_useragent import UserAgent
 
+import datetime
 import pickle
 import time
 import os
@@ -20,9 +21,13 @@ class InstagramBot:
     def __init__(self, _username: str, _password: str):
         self.user_name = _username
         self.password = _password
-
         self.url = 'https://www.instagram.com/'
-        self.driver = webdriver.Chrome()
+
+        self.options = webdriver.ChromeOptions()
+        self.options.add_argument('user-agent=%s' % UserAgent().chrome)
+        self.options.add_argument('--disable-blink-features=AutomationControlled')
+
+        self.driver = webdriver.Chrome(options=self.options)
 
     def log_in(self) -> None:
         self.driver.get(url=self.url)
@@ -80,38 +85,3 @@ def log_in_set_likes(post_url: str) -> None:
     instagram_bot.log_in()
     instagram_bot.set_like(post_url)
     instagram_bot.close()
-
-
-if __name__ == '__main__':
-    posts = (
-        'https://www.instagram.com/p/CrANRK9rni4/',
-        'https://www.instagram.com/p/CrANRK9rni4/',
-        'https://www.instagram.com/p/CrANRK9rni4/',
-        'https://www.instagram.com/p/CrANRK9rni4/',
-        'https://www.instagram.com/p/CrANRK9rni4/',
-        'https://www.instagram.com/p/CrANRK9rni4/',
-        'https://www.instagram.com/p/CrANRK9rni4/',
-        'https://www.instagram.com/p/CrANRK9rni4/'
-    )
-
-    if len(posts) == 1:
-        bot = InstagramBot(username, password)
-        bot.log_in()
-        bot.set_like(posts[0])
-        bot.close()
-
-    _multiprocessing = ask_multiprocessing()
-
-    if _multiprocessing:
-        start_time = datetime.datetime.now()
-        with Pool(os.cpu_count()) as pool:
-            pool.map(log_in_set_likes, posts)
-        print(f'Total time is {datetime.datetime.now() - start_time}')
-    else:
-        start_time = datetime.datetime.now()
-        bot = InstagramBot(username, password)
-        bot.log_in()
-        for url in posts:
-            bot.set_like(url)
-        bot.close()
-        print(f'Total time is {datetime.datetime.now() - start_time}')
